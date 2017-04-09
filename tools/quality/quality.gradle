@@ -1,0 +1,162 @@
+/**
+ * Set up static code analysis and quality tools for all build variants
+ *
+ * - lint
+ * - klint for Kotlin
+ * - checkstyle
+ * - pmd
+ * - findbugs
+ *
+ * Created by Mike Dai Wang on 2017-04-01.
+ *
+ */
+
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+
+configurations {
+    ktlint
+}
+
+dependencies {
+    checkstyle 'com.puppycrawl.tools:checkstyle:7.7'
+    ktlint 'com.github.shyiko:ktlint:0.7.0'
+}
+
+final configDir = "$project.rootDir/tools/quality";
+final reportsDir = "$project.buildDir/reports"
+final gradleTaskGroup = 'Verification'
+
+android {
+    lintOptions {
+        textOutput "stdout"
+        textReport true
+        checkAllWarnings true
+        warningsAsErrors true
+        showAll true
+        explainIssues true
+        abortOnError false
+        lintConfig file("$configDir/rules-lint.xml")
+        htmlOutput file("$reportsDir/lint.html")
+    }
+}
+
+getVariants(project).all { variant ->
+    final variantName = variant.name.capitalize()
+
+    task("check${variantName}") {
+        group gradleTaskGroup
+        description "Runs all checks on the ${variantName} build"
+        dependsOn "lint${variantName}",
+                "ktlint${variantName}",
+                "checkstyle${variantName}",
+                "pmd${variantName}",
+                "findbugs${variantName}"
+    }
+
+    task("checkstyle${variantName}", type: Checkstyle) {
+        group gradleTaskGroup
+        description "Runs checkstyle source code checks on the ${variantName} build"
+        dependsOn "compile${variantName}JavaWithJavac"
+
+        configFile file("$configDir/rules-checkstyle.xml")
+
+        source 'src'
+        include '**/*.java'
+
+        reports {
+            xml.enabled = false
+            html.enabled = true
+            xml {
+                destination "$reportsDir/checkstyle.xml"
+            }
+            html {
+                destination "$reportsDir/checkstyle${variantName}.html"
+            }
+        }
+        classpath = files()
+    }
+
+    task("findbugs${variantName}", type: FindBugs) {
+        group gradleTaskGroup
+        description "Runs Findbugs Java bytecode checks on the ${variantName} build"
+        dependsOn "compile${variantName}Sources"
+
+        ignoreFailures = false
+        effort = "max"
+        reportLevel = "high"
+        excludeFilter = new File("$configDir/rules-findbugs.xml")
+        classes = files("$project.projectDir/build/intermediates/classes")
+
+        source 'src'
+        include '**/*.java'
+        exclude '**/gen/**'
+
+        reports {
+            xml.enabled = false
+            html.enabled = true
+            xml {
+                destination "$reportsDir/findbugs.xml"
+            }
+            html {
+                destination "$reportsDir/findbugs${variantName}.html"
+            }
+        }
+
+        classpath = files()
+    }
+
+    task("pmd${variantName}", type: Pmd) {
+        group gradleTaskGroup
+        description "Runs PMD on the ${variantName} build"
+
+        ruleSetFiles = files("$configDir/rules-pmd.xml")
+        ignoreFailures = false
+        consoleOutput = true
+        ruleSets = []
+
+        source 'src'
+        include '**/*.java'
+        exclude '**/gen/**'
+
+        reports {
+            xml.enabled = false
+            html.enabled = true
+            xml {
+                destination "$reportsDir/pmd.xml"
+            }
+            html {
+                destination "$reportsDir/pmd${variantName}.html"
+            }
+        }
+    }
+
+    task("ktlint${variantName}", type: JavaExec) {
+        group gradleTaskGroup
+        description "Runs Kotlin Linter on the ${variantName} build"
+
+        main = "com.github.shyiko.ktlint.Main"
+        classpath = configurations.ktlint
+        args "src/**/*.kt"
+    }
+
+    task("ktlintFormat${variantName}", type: JavaExec) {
+        group gradleTaskGroup
+        description "Runs Kotlin Formatter on the ${variantName} build"
+
+        main = "com.github.shyiko.ktlint.Main"
+        classpath = configurations.ktlint
+        args "-F", "src/**/*.kt"
+    }
+}
+
+def getVariants(Project project) {
+    if (project.plugins.hasPlugin('com.android.application')) {
+        return android.applicationVariants
+    } else if (project.plugins.hasPlugin('com.android.library')) {
+        return android.libraryVariants
+    } else {
+        throw new IllegalArgumentException("Passed an invalid android project type")
+    }
+}
