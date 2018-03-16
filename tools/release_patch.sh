@@ -1,0 +1,3 @@
+#!/bin/bash
+
+fastlane patch

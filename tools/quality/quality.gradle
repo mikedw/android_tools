@@ -2,12 +2,11 @@
  * Set up static code analysis and quality tools for all build variants
  *
  * - lint
- * - klint for Kotlin
  * - checkstyle
  * - pmd
  * - findbugs
  *
- * Created by Mike Dai Wang on 2017-04-01.
+ * Created by Mike Wang on 2018-03-03.
  *
  */
 
@@ -20,8 +19,8 @@ configurations {
 }
 
 dependencies {
-    checkstyle 'com.puppycrawl.tools:checkstyle:7.7'
-    ktlint 'com.github.shyiko:ktlint:0.7.0'
+    checkstyle 'com.puppycrawl.tools:checkstyle:8.8'
+    ktlint 'com.github.shyiko:ktlint:0.19.0'
 }
 
 final configDir = "$project.rootDir/tools/quality";
@@ -69,10 +68,10 @@ getVariants(project).all { variant ->
             xml.enabled = false
             html.enabled = true
             xml {
-                destination "$reportsDir/checkstyle.xml"
+                destination file("$reportsDir/checkstyle.xml")
             }
             html {
-                destination "$reportsDir/checkstyle${variantName}.html"
+                destination file("$reportsDir/checkstyle${variantName}.html")
             }
         }
         classpath = files()
@@ -97,10 +96,10 @@ getVariants(project).all { variant ->
             xml.enabled = false
             html.enabled = true
             xml {
-                destination "$reportsDir/findbugs.xml"
+                destination file("$reportsDir/findbugs.xml")
             }
             html {
-                destination "$reportsDir/findbugs${variantName}.html"
+                destination file("$reportsDir/findbugs${variantName}.html")
             }
         }
 
@@ -124,10 +123,10 @@ getVariants(project).all { variant ->
             xml.enabled = false
             html.enabled = true
             xml {
-                destination "$reportsDir/pmd.xml"
+                destination file("$reportsDir/pmd.xml")
             }
             html {
-                destination "$reportsDir/pmd${variantName}.html"
+                destination file("$reportsDir/pmd${variantName}.html")
             }
         }
     }
