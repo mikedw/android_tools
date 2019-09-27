@@ -86,7 +86,7 @@ getVariants(project).all { variant ->
         effort = "max"
         reportLevel = "high"
         excludeFilter = new File("$configDir/rules-findbugs.xml")
-        classes = files("$project.projectDir/build/intermediates/classes")
+        classes = files("$project.projectDir/build/intermediates/javac")
 
         source 'src'
         include '**/*.java'
